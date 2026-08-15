@@ -163,28 +163,32 @@ It will offer the option to remove the runtime data as well.
 
 Project Structure
 WizardingOps/
-├── docs/
-│   ├── commands.md
-│   ├── configuration.md
-│   └── manual.md
+├── docs
+│   ├── commands.md
+│   ├── configuration.md
+│   └── manual.md
 ├── install.sh
+├── README.md
 ├── uninstall.sh
-└── wizops/
-    ├── application/
-    ├── capabilities/
-    ├── collectors/
-    ├── config/
-    ├── domain/
-    ├── events/
-    ├── infrastructure/
-    ├── inventory/
-    ├── orchestration/
-    ├── platform/
-    ├── presentation/
-    ├── services/
+└── wizops
+    ├── application
+    ├── capabilities
     ├── cli.py
+    ├── collectors
+    ├── config
+    ├── domain
+    ├── events
+    ├── infrastructure
+    ├── __init__.py
+    ├── integrations
+    ├── inventory
+    ├── orchestration
+    ├── platform
+    ├── presentation
+    ├── services
     ├── startup.py
     └── tui.py
+
 
 
 ## Status
