@@ -163,13 +163,13 @@ It will offer the option to remove the runtime data as well.
 
 Project Structure
  WizardingOps/
- *├── docs/
- *│   ├── commands.md
- *│   ├── configuration.md
- *│   └── manual.md
- *├── install.sh
- *├── uninstall.sh
- *└── wizops/
+ * ├── docs/
+ * │   ├── commands.md
+ * │   ├── configuration.md
+ * │   └── manual.md
+ * ├── install.sh
+ * ├── uninstall.sh
+ * └── wizops/
  *   ├── application/
  *   ├── capabilities/
  *   ├── collectors/
