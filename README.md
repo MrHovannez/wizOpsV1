@@ -57,37 +57,37 @@ Clone or download the repository:
 ```bash
 git clone git@github.com:MrHovannez/wizOpsV1.git
 cd wizOpsV1
-bash```
+```
 
 Make the scripts executable:
 ```bash
 chmod +x install.sh uninstall.sh
-bash```
+```
 
 Run the installer:
 ```bash
 ./install.sh
-bash```
+```
 
 After installation, launch WizOps with:
 ```bash
 wizops tui
-bash```
+```
 
 The installer places the application under:
 ```bash
 ~/.local/share/wizops
-bash```
+```
 
 The command launcher is installed under:
 ```bash
 ~/.local/bin/wizops
-bash```
+```
 
 Runtime data is stored separately under:
 ```bash
 ~/.wizops
-bash```
+```
 
 This separation keeps application files independent from the user's collected runtime data.
 
@@ -98,22 +98,22 @@ This separation keeps application files independent from the user's collected ru
 Show available commands:
 ```bash
 wizops --help
-bash```
+```
 
 Discover system services and collect recent events:
 ```bash
 wizops discover
-bash```
+```
 
 Launch the interactive console:
 ```bash
 wizops tui
-bash```
+```
 
 Open the operator manual:
 ```bash
 wizops manual
-bash```
+```
 
 
 ## Interactive Console
@@ -142,7 +142,7 @@ WizOps maintains a local SQLite event archive.
 Runtime data is stored in:
 ```bash
 ~/.wizops
-bash```
+```
 
 The database is created automatically during initialization and collection.
 
@@ -155,7 +155,7 @@ WizOps does not require a remote database or external service for its core funct
 To remove the installed application and launcher:
 ```bash
 ./uninstall.sh
-bash```
+```
 
 The uninstaller preserves runtime data by default.
 
