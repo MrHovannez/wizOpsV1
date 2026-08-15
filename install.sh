@@ -348,15 +348,25 @@ fi
 echo
 
 if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
-    echo "WARNING:"
-    echo "  $BIN_DIR is not currently in your PATH."
     echo
-    echo "Add this to ~/.bashrc:"
-    echo
-    echo '    export PATH="$HOME/.local/bin:$PATH"'
-    echo
-    echo "Then restart your shell."
-    echo
+    echo "$BIN_DIR is not currently in your PATH."
+
+    SHELL_RC="$HOME/.bashrc"
+
+    if [[ -f "$SHELL_RC" ]] && \
+       ! grep -Fqx 'export PATH="$HOME/.local/bin:$PATH"' "$SHELL_RC"; then
+
+        echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_RC"
+        echo "  Added $BIN_DIR to ~/.bashrc"
+    fi
+
+    # Make wizops available immediately to this installer process
+    # and any commands launched from it.
+    export PATH="$BIN_DIR:$PATH"
+
+    echo "  PATH .............. UPDATED"
+else
+    echo "  PATH .............. OK"
 fi
 
 # ----------------------------------------------------------------------
