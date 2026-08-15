@@ -14,7 +14,7 @@ class SystemOverview:
     cpu: Cpu
     memory: Memory
     storage: Storage
-    network: Network
+    network: NetworkInventory
 
 
 @dataclass(frozen=True)

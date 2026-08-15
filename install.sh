@@ -11,6 +11,9 @@ VERSION="0.1.0"
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 INSTALL_ROOT="$HOME/.local/share/wizops"
+VENV_ROOT="$INSTALL_ROOT/.venv"
+VENV_PYTHON="$VENV_ROOT/bin/python"
+
 BIN_DIR="$HOME/.local/bin"
 LAUNCHER="$BIN_DIR/wizops"
 
@@ -49,6 +52,42 @@ if [[ ! -f "$SRC/docs/manual.md" ]]; then
 fi
 
 # ----------------------------------------------------------------------
+# Check Python
+# ----------------------------------------------------------------------
+
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "ERROR: python3 was not found."
+    echo "Please install Python 3 and run the installer again."
+    exit 1
+fi
+
+PYTHON_VERSION="$(python3 --version 2>&1)"
+echo "Python:"
+echo "  $PYTHON_VERSION"
+
+# ----------------------------------------------------------------------
+# Check Python venv support
+# ----------------------------------------------------------------------
+
+echo
+echo "Checking Python virtual environment support..."
+
+if ! python3 -m venv --help >/dev/null 2>&1; then
+    echo
+    echo "ERROR: Python venv support is not available."
+    echo
+    echo "On Debian/Raspberry Pi OS, install:"
+    echo "  sudo apt install python3-venv"
+    echo
+    echo "On Fedora, install:"
+    echo "  sudo dnf install python3"
+    echo
+    exit 1
+fi
+
+echo "  venv ............ OK"
+
+# ----------------------------------------------------------------------
 # Prepare directories
 # ----------------------------------------------------------------------
 
@@ -61,6 +100,7 @@ mkdir -p "$RUNTIME_ROOT"
 # ----------------------------------------------------------------------
 
 if [[ -e "$INSTALL_ROOT" || -L "$INSTALL_ROOT" ]]; then
+    echo
     echo "Backing up previous installation..."
     echo "  $BACKUP"
 
@@ -72,13 +112,7 @@ fi
 if [[ -e "$LAUNCHER" || -L "$LAUNCHER" ]]; then
     mkdir -p "$BACKUP"
 
-    # Preserve the existing launcher itself rather than following
-    # a symlink into another installation.
-    if [[ -L "$LAUNCHER" ]]; then
-        cp -a "$LAUNCHER" "$BACKUP/wizops-launcher"
-    else
-        cp -a "$LAUNCHER" "$BACKUP/wizops-launcher"
-    fi
+    cp -a "$LAUNCHER" "$BACKUP/wizops-launcher"
 fi
 
 # ----------------------------------------------------------------------
@@ -90,7 +124,6 @@ echo "Installing application..."
 echo "  $INSTALL_ROOT"
 
 rm -rf "$INSTALL_ROOT"
-
 mkdir -p "$INSTALL_ROOT"
 
 cp -a "$SRC/wizops" "$INSTALL_ROOT/"
@@ -113,6 +146,40 @@ find "$INSTALL_ROOT" \
     -exec rm -rf {} +
 
 # ----------------------------------------------------------------------
+# Create private Python environment
+# ----------------------------------------------------------------------
+
+echo
+echo "Creating Python environment..."
+echo "  $VENV_ROOT"
+
+python3 -m venv "$VENV_ROOT"
+
+if [[ ! -x "$VENV_PYTHON" ]]; then
+    echo "ERROR: Python virtual environment was not created correctly."
+    exit 1
+fi
+
+echo "  Environment ..... OK"
+
+# ----------------------------------------------------------------------
+# Install Python dependencies
+# ----------------------------------------------------------------------
+
+echo
+echo "Installing Python dependencies..."
+
+"$VENV_PYTHON" -m pip install --upgrade pip >/dev/null
+
+"$VENV_PYTHON" -m pip install \
+    textual \
+    psutil
+
+echo
+echo "  Dependencies ..... OK"
+
+
+# ----------------------------------------------------------------------
 # Install launcher
 # ----------------------------------------------------------------------
 
@@ -120,10 +187,6 @@ echo
 echo "Installing launcher..."
 echo "  $LAUNCHER"
 
-# IMPORTANT:
-# Remove an existing symlink/file before writing the launcher.
-# Otherwise a previous symlink could cause the redirection below
-# to overwrite the old personal toolkit launcher.
 rm -f "$LAUNCHER"
 
 cat > "$LAUNCHER" <<EOF
@@ -131,10 +194,20 @@ cat > "$LAUNCHER" <<EOF
 set -euo pipefail
 
 APP_ROOT="$INSTALL_ROOT"
+PYTHON="$VENV_PYTHON"
+
+if [[ ! -x "\$PYTHON" ]]; then
+    echo "ERROR: WizOps Python environment was not found." >&2
+    echo "Expected:" >&2
+    echo "  \$PYTHON" >&2
+    echo >&2
+    echo "Try reinstalling WizOps with install.sh." >&2
+    exit 1
+fi
 
 export PYTHONPATH="\$APP_ROOT\${PYTHONPATH:+:\$PYTHONPATH}"
 
-exec python3 -P -m wizops.cli "\$@"
+exec "\$PYTHON" -P -m wizops.cli "\$@"
 EOF
 
 chmod +x "$LAUNCHER"
@@ -150,7 +223,7 @@ echo "Validating Python source..."
     cd "$INSTALL_ROOT"
 
     find wizops -type f -name '*.py' -print0 |
-        xargs -0 python3 -m py_compile
+        xargs -0 "$VENV_PYTHON" -m py_compile
 )
 
 # Remove validation artifacts.
@@ -159,6 +232,8 @@ find "$INSTALL_ROOT" \
     -name '__pycache__' \
     -prune \
     -exec rm -rf {} +
+
+echo "  Python source .... OK"
 
 # ----------------------------------------------------------------------
 # Validate installed CLI
@@ -169,11 +244,23 @@ echo "Testing installed CLI..."
 
 "$LAUNCHER" --help >/dev/null
 
-echo "  CLI ............ OK"
+echo "  CLI .............. OK"
 
 "$LAUNCHER" init >/dev/null
 
-echo "  Database ....... OK"
+echo "  Database .......... OK"
+
+# ----------------------------------------------------------------------
+# Validate TUI dependencies
+# ----------------------------------------------------------------------
+
+echo
+echo "Testing TUI dependencies..."
+
+"$VENV_PYTHON" -c "import textual; import psutil"
+
+echo "  Textual .......... OK"
+echo "  psutil ........... OK"
 
 # ----------------------------------------------------------------------
 # Verify launcher
@@ -197,7 +284,7 @@ if [[ ! -x "$LAUNCHER" ]]; then
     exit 1
 fi
 
-echo "  Launcher ........ OK"
+echo "  Launcher .......... OK"
 
 # ----------------------------------------------------------------------
 # Verify application
@@ -213,8 +300,14 @@ if [[ ! -f "$INSTALL_ROOT/docs/manual.md" ]]; then
     exit 1
 fi
 
-echo "  Application ...... OK"
-echo "  Documentation .... OK"
+if [[ ! -x "$VENV_PYTHON" ]]; then
+    echo "ERROR: private Python environment is missing."
+    exit 1
+fi
+
+echo "  Application ........ OK"
+echo "  Documentation ...... OK"
+echo "  Python environment . OK"
 
 # ----------------------------------------------------------------------
 # Check for legacy/personal references
@@ -270,12 +363,22 @@ fi
 # Finished
 # ----------------------------------------------------------------------
 
-echo "========================================"
+echo
+echo "██╗    ██╗██╗███████╗ ██████╗ ██████╗ ███████╗"
+echo "██║    ██║██║╚══███╔╝██╔═══██╗██╔══██╗██╔════╝"
+echo "██║ █╗ ██║██║  ███╔╝ ██║   ██║██████╔╝███████╗"
+echo "██║███╗██║██║ ███╔╝  ██║   ██║██╔═══╝ ╚════██║"
+echo "╚███╔███╔╝██║███████╗╚██████╔╝██║     ███████║"
+echo " ╚══╝╚══╝ ╚═╝╚══════╝ ╚═════╝ ╚═╝     ╚══════╝"
+echo
+echo "        Linux Wizardry Operations Console"
+echo "────────────────────────────────────────────────────────"
+echo
 echo "$APP_NAME $VERSION installed successfully."
-echo "========================================"
 echo
 echo "Application : $INSTALL_ROOT"
 echo "Runtime     : $RUNTIME_ROOT"
+echo "Python      : $VENV_ROOT"
 echo "Launcher    : $LAUNCHER"
 
 if [[ -d "$BACKUP" ]]; then
@@ -291,12 +394,12 @@ echo "Or:"
 echo
 echo "    wizops tui"
 echo
+
 # ----------------------------------------------------------------------
 # Shell command cache note
 # ----------------------------------------------------------------------
 
 if [[ "${BASH_VERSION:-}" != "" ]]; then
-    echo
     echo "NOTE:"
     echo "  If wizops was previously installed in this shell,"
     echo "  refresh Bash's command cache before launching:"
